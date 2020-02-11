@@ -1,11 +1,11 @@
 import { LyricTag } from "@hypst/lrc-parser/dist/lib/definition";
 import { LyricStorage, ArgumentType, Step } from "../definition";
 import * as fs from 'fs';
-import parseLrc from '@hypst/lrc-parser'
+import {parse as parseLrc,createLRC} from '@hypst/lrc-parser'
 import { printInfo, printTable, printValue } from "../lib/print";
 import { HMSTime, BeatTime } from "@hypst/time-beat-format";
 import { hmsOption, beatOption } from "../lib/options";
-import { hasUnsavedWork } from "./exit";
+import { unsavedWork } from "./exit";
 import { commandMap } from "../lib/identifier";
 
 class CommandsCollection {
@@ -14,9 +14,51 @@ class CommandsCollection {
 
     tags:LyricTag[] = [];
     lyric:LyricStorage[] = [];
-    undoStack:Step[] = [];
-    redoStack:Step[] = [];
     filePath:string = '';
+
+
+
+    _lyricPrefixCache:LyricStorage[] = [];
+
+    _prefixCached:boolean = false;
+
+    private _calculatePrefix(){
+        if(this._prefixCached)return;
+        let t = new HMSTime(0,hmsOption);
+        this.lyric.forEach((line,index)=>{
+            this._lyricPrefixCache[index] = {
+                duration:new HMSTime(t),
+                text:line.text,
+            }
+            t.increase(line.duration);
+        });
+        this._prefixCached = true;
+    }
+
+    private _clearPrefixCache(){
+        this._lyricPrefixCache = [];
+        this._prefixCached = false;
+    }
+
+
+
+    undoStack:Step[] = [];
+
+    redoStack:Step[] = [];
+    
+    private _saveStep(undo:boolean,step:Step){
+        let tStack;
+        if(undo)tStack = this.undoStack;
+        else tStack = this.redoStack;
+        tStack.push(step);
+
+    }
+
+    private _lyricChanged(){
+        unsavedWork.hasUnsavedWork = true;
+        this._clearPrefixCache();
+        this._calculatePrefix();
+    }
 
 
 
@@ -83,32 +125,37 @@ class CommandsCollection {
                     printInfo(x,ln,args[0] as string);
                 }
                 if(!hasError){
+
                     if(!(/^\s+$/).test(lyricObj.lyric.lines[lyricObj.lyric.lines.length-1].text)){
                         printInfo({
                             type:'Warning',
                             message:'The last line of this.lyric is not empty. The line is ignored.',
                         });
                     }
+
                     for(let i=0;i<lyricObj.lyric.lines.length-1;i++){
                         this.lyric.push({
                             duration:new HMSTime(lyricObj.lyric.lines[i+1].time.offset(lyricObj.lyric.lines[i].time),hmsOption),
                             text:lyricObj.lyric.lines[i].text,
                         });
                     }
-                    this.tags = [...lyricObj.lyric.tags];
-                    let tStack;
-                    if(undo){
-                        tStack = this.undoStack;
-                    }else{
-                        tStack = this.redoStack;
+                    if(lyricObj.lyric.lines[0].time.toMillisecond()!=0){
+                        this.lyric.unshift({
+                            duration:new HMSTime(lyricObj.lyric.lines[0].time.toMillisecond(),hmsOption),
+                            text:'',
+                        });
                     }
-                    tStack.push({
+                    this.tags = [...lyricObj.lyric.tags];
+                    this._calculatePrefix();
+
+                    this._saveStep(undo,{
                         name:'Load File',
                         undo:{
                             exec:this.commandCloseLyric.bind(this),
                             args:[],
                         },
                     });
+
                 }
             }catch(e){
                 printInfo({
@@ -125,19 +172,13 @@ class CommandsCollection {
     }
 
     commandCloseLyric(undo:boolean){
-        if(hasUnsavedWork){
+        if(unsavedWork.hasUnsavedWork){
             printInfo({
                 type:'Warning',
                 message:"The work is unsaved. Please save it before close or use 'close!' to force close.",
             });
         }else{
-            let tStack;
-            if(undo){
-                tStack = this.undoStack;
-            }else{
-                tStack = this.redoStack;
-            }
-            tStack.push({
+            this._saveStep(undo,{
                 name:'Close File',
                 undo:{
                     exec:this.commandOpenLyric.bind(this),
@@ -156,30 +197,96 @@ class CommandsCollection {
             this.undoStack = [];
             this.redoStack = [];
             this.filePath = '';
+            unsavedWork.hasUnsavedWork = false;
+    }
+
+    commandSaveLyric(args:ArgumentType[]){
+        let savePath = this.filePath;
+        try{
+            if(typeof(args[0])=='string')savePath = args[0];
+            this._calculatePrefix();
+            let lyricSrc = createLRC({
+                tags:this.tags,
+                lines:this._lyricPrefixCache.map((line)=>{
+                    return {
+                        time:line.duration,
+                        text:line.text,
+                    }
+                }),
+            });
+            fs.writeFileSync(savePath,lyricSrc);
+        }catch(err){
+            printInfo({
+                type:'Fatal',
+                message:e,
+            });
+            return;
+        }
+        if(this.filePath!=savePath){
+            printInfo({
+                type:'Info',
+                message:`File path changed, open file ${savePath}.`,
+            });
+            this.filePath = savePath;
+        }
+        unsavedWork.hasUnsavedWork = false;
     }
 
 
 
     commandListLyric(args:ArgumentType[]){
+
         let lrcRange;
-        let isBeatTime:boolean;
+        let isBeatTime:boolean = false;
+        let isAbsoluteTime:boolean = false;
+        let rangeLeft:number|undefined;
+        let rangeRight:number|undefined;
+        let options:any;
+
         if(typeof(args[0])=='number'&&typeof(args[1])=='number'){
-            lrcRange = this.lyric.slice(args[0]-1,args[1]);
-            if(typeof(args[2])=='boolean'){
-                isBeatTime = args[2];
-            }
-        }else{
-            if(typeof(args[0])=='boolean'){
-                isBeatTime = args[0];
-            }
-            lrcRange = this.lyric;
+            [rangeLeft,rangeRight,options] = args;
+        }else if(typeof(args[0])=='number'&&typeof(args[1])!='number'){
+            [rangeLeft,options] = args;
+        }else if(typeof(args[1])=='number'&&typeof(args[2])=='number'){
+            [options,rangeLeft,rangeRight] = args;
+        }else if(typeof(args[1])=='number'&&typeof(args[0])!='number'){
+            [options,rangeLeft] = args;
         }
-        printTable([['index','duration','text'],...lrcRange.map((line,index)=>{
+
+        if(typeof(options)=='string'){
+            for(let c of options){
+                switch(c){
+                    case 't':
+                        isAbsoluteTime = true;
+                        break;
+                    case 'b':
+                        isBeatTime = true;
+                        break;
+                }
+            }
+        }
+
+        let lyricList;
+        if(isAbsoluteTime){
+            this._calculatePrefix();
+            lyricList = this._lyricPrefixCache;
+        }else{
+            lyricList = this.lyric;
+        }
+
+        if(rangeLeft){
+            lrcRange = lyricList.slice(rangeLeft-1,rangeRight);
+        }else{
+            lrcRange = lyricList;
+        }
+        
+        printTable([['index',isAbsoluteTime?'timeSpec':'duration','text'],...lrcRange.map((line,index)=>{
             if(isBeatTime){
                 return [index+1,new BeatTime(beatOption,line.duration),line.text];
             }
             return [index+1,line.duration,line.text];
         })]);
+    
     }
 
     commandGetDurationOf(args:ArgumentType[]){
@@ -190,7 +297,7 @@ class CommandsCollection {
             });
             return;
         }else{
-            commandMap.get('set')!.exec([args[0],this.lyric[args[1]].duration]);
+            commandMap.get('set')!.exec([args[0],this.lyric[args[1]-1].duration]);
         }
     }
 
@@ -202,8 +309,252 @@ class CommandsCollection {
             });
             return;
         }else{
-            commandMap.get('set')!.exec([args[0],this.lyric[args[1]].text]);
+            commandMap.get('set')!.exec([args[0],this.lyric[args[1]-1].text]);
         }
+    }
+
+
+    commandAlter(undo:boolean,args:ArgumentType[]){
+        let index = args.shift();
+        if(typeof(index)!='number' || index<1 || index> this.lyric.length){
+            printInfo({
+                type:'Error',
+                message:'Invalid index.',
+            });
+            return;
+        }
+        let duration:HMSTime|undefined;
+        let text:string|undefined;
+        for(let arg of args){
+            if(arg instanceof HMSTime){
+                duration = arg;
+            }else if(arg instanceof BeatTime){
+                duration = arg.toHMSTime();
+            }else if(typeof(arg)=='string'){
+                text = arg;
+            }
+        }
+        let undoArgs:ArgumentType[] = [index];
+        if(duration){
+            undoArgs.push(this.lyric[index-1].duration);
+            this.lyric[index-1].duration = duration;
+        }
+        if(text){
+            undoArgs.push(this.lyric[index-1].text);
+            this.lyric[index-1].text = text;
+        }
+        
+        this._saveStep(undo,{
+            name:'Alter line',
+            undo:{
+                exec:this.commandAlter.bind(this),
+                args:undoArgs,
+            }
+        });
+
+        this._lyricChanged();
+
+    }
+
+    _insertAfter(index:number,duration:HMSTime,text:string){
+        this.lyric = [
+            ...this.lyric.slice(0,index),
+            {duration,text},
+            ...this.lyric.slice(index),
+        ]
+    }
+
+    commandInsertAfter(undo:boolean,args:ArgumentType[]){
+        if(typeof(args[0])!='number' || args[0]<0 || args[0]> this.lyric.length){
+            printInfo({
+                type:'Error',
+                message:'Invalid index.',
+            });
+            return;
+        }else{
+            if((args[1] instanceof HMSTime || args[1] instanceof BeatTime) && typeof args[2]=='string'){
+                if(args[1] instanceof BeatTime){
+                    args[1] = args[1].toHMSTime();
+                }
+                this._insertAfter(args[0],args[1],args[2]);
+            }
+        }
+        this._saveStep(undo,{
+            name:'Insert a line',
+            undo:{
+                exec:this.commandRemove.bind(this),
+                args:[args[0]+1],
+            }
+        })
+        this._lyricChanged();
+    }
+
+    commandRemove(undo:boolean,args:ArgumentType[]){
+        if(typeof(args[0])!='number' || args[0]<=0 || args[0]> this.lyric.length){
+            printInfo({
+                type:'Error',
+                message:'Invalid index.',
+            });
+            return;
+        }
+        if(typeof(args[1])!='number' || args[1]<=0 || args[1]> this.lyric.length){
+            args[1]=args[0];
+        }
+
+        let stepArgs = [];
+        for(let i = args[0];i<=args[1];i++){
+            stepArgs.push(
+                i-1,
+                this.lyric[i-1].duration,
+                this.lyric[i-1].text,
+            );
+        }
+        this._saveStep(undo,{
+            name:'Remove line(s)',
+            undo:{
+                exec:((undo:boolean,sArgs:ArgumentType[])=>{
+                    for(let i=0;i<sArgs.length;i+=3){
+                        this._insertAfter(sArgs[i] as number,sArgs[i+1] as HMSTime,sArgs[i+2] as string);
+                    }
+                    this._saveStep(undo,{
+                        name:'Insert Line(s)',
+                        undo:{
+                            exec:this.commandRemove.bind(this),
+                            args,
+                        }
+                    });
+                    this._lyricChanged();
+                }).bind(this),
+                args:stepArgs,
+            }
+        });
+        this.lyric = [
+            ...this.lyric.slice(0,args[0]-1),
+            ...this.lyric.slice(args[1]),
+        ];
+        this._lyricChanged();
+    }
+
+    commandPush(args:ArgumentType[]){
+        this.commandInsertAfter(true,[this.lyric.length,...args]);
+    }
+
+    commandPop(){
+        this.commandRemove(true,[this.lyric.length]);
+    }
+
+    commandClone(undo:boolean,args:ArgumentType[]){
+        if(typeof(args[0])!='number' || args[0]<0 || args[0]> this.lyric.length){
+            printInfo({
+                type:'Error',
+                message:'Invalid index.',
+            });
+            return;
+        }
+        if(typeof(args[1])!='number' || args[1]<args[0] || args[0]> this.lyric.length){
+            printInfo({
+                type:'Error',
+                message:'Invalid index.',
+            });
+            return;
+        }
+        if(typeof(args[2])!='number' || args[0]<0 || args[0]> this.lyric.length){
+            printInfo({
+                type:'Error',
+                message:'Invalid index.',
+            });
+            return;
+        }
+
+        let left = args[0];
+        let right = args[1];
+        let destination = args[2];
+
+        let content = this.lyric.slice(left-1,right);
+
+        this.lyric = [
+            ...this.lyric.slice(0,destination),
+            ...content,
+            ...this.lyric.slice(destination),
+        ];
+
+        this._saveStep(undo,{
+            name:'Clone lyric line(s)',
+            undo:{
+                exec:this.commandRemove.bind(this),
+                args:[destination+1,destination+right-left+1],
+            }
+        });
+        this._lyricChanged();
+    }
+
+    commandMove(undo:boolean,args:ArgumentType[]){
+        if(typeof(args[0])!='number' || args[0]<0 || args[0]> this.lyric.length){
+            printInfo({
+                type:'Error',
+                message:'Invalid index.',
+            });
+            return;
+        }
+        if(typeof(args[1])!='number' || args[1]<args[0] || args[0]> this.lyric.length){
+            printInfo({
+                type:'Error',
+                message:'Invalid index.',
+            });
+            return;
+        }
+        if(typeof(args[2])!='number' || args[0]<0 || args[0]> this.lyric.length){
+            printInfo({
+                type:'Error',
+                message:'Invalid index.',
+            });
+            return;
+        }
+
+        let left = args[0];
+        let right = args[1];
+        let destination = args[2];
+
+        if(destination>=left-1 && destination<=right){
+            printInfo({
+                type:'Warning',
+                message:'Destination is in the range. Nothing will be moved.'
+            });
+            return;
+        }
+
+        let content = this.lyric.slice(left-1,right);
+
+        let endDestination:number;
+        let newDestination:number;
+        if(destination<left-1){
+            this.lyric = [
+                ...this.lyric.slice(0,destination),
+                ...content,
+                ...this.lyric.slice(destination,left-1),
+                ...this.lyric.slice(right)
+            ];
+            endDestination = destination;
+            newDestination = right;
+        }else{
+            this.lyric = [
+                ...this.lyric.slice(0,left-1),
+                ...this.lyric.slice(right,destination),
+                ...content,
+                ...this.lyric.slice(destination),
+            ];
+            endDestination = destination-right+left-1;
+            newDestination = left-1;
+        }
+
+        this._saveStep(undo,{
+            name:'Move lyric line(s)',
+            undo:{
+                exec:this.commandMove.bind(this),
+                args:[endDestination+1,endDestination+right-left+1,newDestination],
+            }
+        });
+        this._lyricChanged();
     }
 
 }
@@ -246,6 +597,10 @@ commandMap.set('close!',{
     description:'Force close lrc file.',
 });
 
+commandMap.set('save',{
+    exec:scope.commandSaveLyric.bind(scope),
+    description:'Save lrc file.',
+});
 
 
 
@@ -262,4 +617,41 @@ commandMap.set('getDurationOf',{
 commandMap.set('getTextOf',{
     exec:scope.commandGetTextOf.bind(scope),
     description:'Get the text of a lyric and save it to a variable.',
+});
+
+
+
+commandMap.set('alter',{
+    exec:(args)=>{scope.commandAlter.bind(scope)(true,args)},
+    description:'Alter a lyric line.',
+});
+
+commandMap.set('insertAfter',{
+    exec:(args)=>{scope.commandInsertAfter.bind(scope)(true,args)},
+    description:'Insert a new line after.',
+});
+
+commandMap.set('push',{
+    exec:scope.commandPush.bind(scope),
+    description:'Append a new line.'
+});
+
+commandMap.set('pop',{
+    exec:scope.commandPop.bind(scope),
+    description:'Remove the last line.'
+});
+
+commandMap.set('remove',{
+    exec:(args)=>{scope.commandRemove.bind(scope)(true,args)},
+    description:'Remove a line',
+});
+
+commandMap.set('clone',{
+    exec:(args)=>{scope.commandClone.bind(scope)(true,args)},
+    description:'Clone lines to.',
+});
+
+commandMap.set('move',{
+    exec:(args)=>{scope.commandMove.bind(scope)(true,args)},
+    description:'Move lines to.',
 });

@@ -46,7 +46,15 @@ commandMap.set('delete',{
 commandMap.set('commands',{
     description:'List all commands.',
     exec:function(){
-        printTable([...commandMap].map((tr)=>{
+        printTable([...commandMap].sort((v1,v2)=>{
+            if(v1[0]>v2[0]){
+                return 1;
+            }else if(v1[0]==v2[0]){
+                return 0;
+            }else{
+                return -1;
+            }
+        }).map((tr)=>{
             return [tr[0],tr[1].description];
         }));
     },

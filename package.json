@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/HyperbolaStudio/lrc-editor-app#readme",
   "dependencies": {
-    "@hypst/lrc-parser": "^1.0.1",
+    "@hypst/lrc-parser": "^2.0.1",
     "@hypst/time-beat-format": "0.0.4",
     "chalk": "^3.0.0",
     "string-width": "^4.2.0"

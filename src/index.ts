@@ -1,4 +1,4 @@
-import './lib/print';
+import './commands/print';
 import './commands/var';
 import './commands/exit';
 import './lib/stdin_listener';
