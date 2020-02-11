@@ -1,0 +1,31 @@
+{
+  "name": "lrc-editor-app",
+  "version": "1.0.0",
+  "description": "Lyric editor app",
+  "main": "out/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc -p",
+    "watch": "tsc -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HyperbolaStudio/lrc-editor-app.git"
+  },
+  "keywords": [
+    "lyric",
+    "editor"
+  ],
+  "author": "Crindzebra",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/HyperbolaStudio/lrc-editor-app/issues"
+  },
+  "homepage": "https://github.com/HyperbolaStudio/lrc-editor-app#readme",
+  "dependencies": {
+    "@hypst/lrc-parser": "^1.0.1",
+    "@hypst/time-beat-format": "0.0.4",
+    "chalk": "^3.0.0",
+    "string-width": "^4.2.0"
+  }
+}
