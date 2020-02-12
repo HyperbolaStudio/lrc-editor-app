@@ -1,5 +1,4 @@
-import './commands/print';
-import './commands/var';
-import './commands/exit';
-import './lib/stdin_listener';
-import './commands/lyricCommands';
+import './command_list';
+import { start } from './lib/lifecycle';
+
+start();

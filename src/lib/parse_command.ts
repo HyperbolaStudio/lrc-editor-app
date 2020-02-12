@@ -1,8 +1,9 @@
 import { PointerWrapper, Command, ConsoleInfo } from "../definition";
 import {HMSTime,BeatTime} from '@hypst/time-beat-format';
-import { beatOption, hmsOption } from "./options";
+import { beat as beatOption, hms as hmsOption } from "./options";
 import { identifierMap, commandMap } from "./identifier";
-import { printInfo } from "./print";
+import { printInfo, printValue } from "./print";
+import leven from 'leven';
 
 export function parseCommand(str:string):Command|ConsoleInfo{
     let hmsTimeRegExp = new RegExp(`\\[${HMSTime.HMS_REGEXP.source.slice(1,HMSTime.HMS_REGEXP.source.length-1)}\\]`);
@@ -24,11 +25,24 @@ export function parseCommand(str:string):Command|ConsoleInfo{
             }else if(/\s/.test(str[i])){
                 if(command.name==''){
                     if(!commandMap.has(buf)){
-                        return printInfo({
+                        printInfo({
                             type:'Error',
                             column:i-buf.length+1,
                             message:'Reference Error: Unknown command.',
                         },str);
+                        let probCmd = ''
+                        let probCmdDist = Infinity;
+                        for(let [cmd] of commandMap){
+                            let dist = leven(buf,cmd);
+                            if(dist<probCmdDist){
+                                probCmdDist = dist;
+                                probCmd = cmd;
+                            }
+                        }
+                        return printInfo({
+                            type:'Info',
+                            message:`Do you mean '${probCmd}'?`,
+                        });
                     }
                     command.name = buf;
                     buf = '';

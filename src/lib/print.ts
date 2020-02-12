@@ -1,41 +1,41 @@
 import chalk from 'chalk';
 import { ConsoleInfo } from '../definition';
 import { HMSTime, BeatTime } from '@hypst/time-beat-format';
-import { commandMap } from './identifier';
 import stringWidth from 'string-width';
+import { general } from './options';
 
-export function printInfo(info:ConsoleInfo,line?:string,path?:string){
+export function printInfo(info:ConsoleInfo,line?:string,path?:string,stream:NodeJS.WritableStream = process.stderr){
     switch(info.type){
         case 'Info':
-            process.stderr.write(chalk.white.bgBlue.bold('\n(i)Info')+' ');
+            stream.write(chalk.white.bgBlue.bold(general.endLine+'(i)Info')+' ');
             break;
         case 'Warning':
-            process.stderr.write(chalk.black.bgYellow.bold('\n(!)Warning')+' ');
+            stream.write(chalk.black.bgYellow.bold(general.endLine+'(!)Warning')+' ');
             break;
         case 'Error':
-            process.stderr.write(chalk.bgRedBright.bold('\n(x)Error')+' ');
+            stream.write(chalk.bgRedBright.bold(general.endLine+'(x)Error')+' ');
             break;
         case 'Fatal':
-            process.stderr.write(chalk.bgRed.bold('\n(X)Fatal')+' ');
+            stream.write(chalk.bgRed.bold(general.endLine+'(X)Fatal')+' ');
             break;
     }
-    process.stderr.write(chalk.reset(info.message)+'\n');
+    stream.write(chalk.reset(info.message)+general.endLine);
     if(path){
-        process.stderr.write(chalk.reset(path));
+        stream.write(chalk.reset(path));
     }
     if(info.line){
-        process.stderr.write(chalk.reset(`:${info.line}`));
+        stream.write(chalk.reset(`:${info.line}`));
     }
     if(info.column){
-        process.stderr.write(chalk.reset(`:${info.column}`));
+        stream.write(chalk.reset(`:${info.column}`));
     }
-    process.stderr.write('\n');
+    stream.write(general.endLine);
     if(line){
-        process.stderr.write(line+'\n');
+        stream.write(line+general.endLine);
         for(let i=0;info.column&&i<info.column-1;i++){
-            process.stderr.write(' ');
+            stream.write(' ');
         }
-        process.stderr.write(chalk.green('^\n'));
+        stream.write(chalk.green('^'+general.endLine));
     }
     return info;
 }
@@ -63,17 +63,17 @@ function stringColor(value:any):string{
 }
 
 export function printValue(...values:any[]){
-    return function(sep?:string,end?:string){
+    return function(sep?:string,end?:string,stream:NodeJS.WritableStream = process.stdout){
         if(!sep&&sep!='')sep = ' ';
-        if(!end&&end!='')end = '\n';
-        process.stdout.write(values.map((value)=>{
+        if(!end&&end!='')end = general.endLine;
+        stream.write(values.map((value)=>{
             return stringColor(value);
         }).join(sep));
-        process.stdout.write(end);
+        stream.write(end);
     }
 }
 
-export function printTable(valueTable:any[][]){
+export function printTable(valueTable:any[][],stream:NodeJS.WritableStream = process.stdout){
     let width:number[] = [];
     for(let tr of valueTable){
         for(let i=0;i<tr.length;i++){
@@ -87,12 +87,12 @@ export function printTable(valueTable:any[][]){
     }
     for(let tr of valueTable){
         for(let i=0;i<tr.length;i++){
-            printValue(tr[i])('','');
+            printValue(tr[i])('','',stream);
             let tabWidth = width[i]-Math.floor((stringWidth(stringColor(tr[i])))/8);
             while(tabWidth--){
-                process.stdout.write('\t');
+                stream.write('\t');
             }
         }
-        process.stdout.write('\n');
+        stream.write(general.endLine);
     }
 }

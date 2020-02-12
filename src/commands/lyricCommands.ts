@@ -4,9 +4,11 @@ import * as fs from 'fs';
 import {parse as parseLrc,createLRC} from '@hypst/lrc-parser'
 import { printInfo, printTable, printValue } from "../lib/print";
 import { HMSTime, BeatTime } from "@hypst/time-beat-format";
-import { hmsOption, beatOption } from "../lib/options";
+import { hms as hmsOption, beat as beatOption } from "../lib/options";
 import { unsavedWork } from "./exit";
 import { commandMap } from "../lib/identifier";
+import { configDir } from "../lib/lifecycle";
+import * as path from 'path';
 
 class CommandsCollection {
 
@@ -27,7 +29,7 @@ class CommandsCollection {
         let t = new HMSTime(0,hmsOption);
         this.lyric.forEach((line,index)=>{
             this._lyricPrefixCache[index] = {
-                duration:new HMSTime(t),
+                duration:new HMSTime(t.toMillisecond(),hmsOption),
                 text:line.text,
             }
             t.increase(line.duration);
@@ -58,6 +60,7 @@ class CommandsCollection {
         unsavedWork.hasUnsavedWork = true;
         this._clearPrefixCache();
         this._calculatePrefix();
+        this._writeWatcherFile();
     }
 
 
@@ -126,7 +129,7 @@ class CommandsCollection {
                 }
                 if(!hasError){
 
-                    if(!(/^\s+$/).test(lyricObj.lyric.lines[lyricObj.lyric.lines.length-1].text)){
+                    if(!(/^\s*$/).test(lyricObj.lyric.lines[lyricObj.lyric.lines.length-1].text)){
                         printInfo({
                             type:'Warning',
                             message:'The last line of this.lyric is not empty. The line is ignored.',
@@ -146,8 +149,8 @@ class CommandsCollection {
                         });
                     }
                     this.tags = [...lyricObj.lyric.tags];
-                    this._calculatePrefix();
-
+                    
+                    this._lyricChanged();
                     this._saveStep(undo,{
                         name:'Load File',
                         undo:{
@@ -205,20 +208,24 @@ class CommandsCollection {
         try{
             if(typeof(args[0])=='string')savePath = args[0];
             this._calculatePrefix();
+            let lastTime = new HMSTime(this._lyricPrefixCache[this._lyricPrefixCache.length-1].duration.toMillisecond(),hmsOption);
             let lyricSrc = createLRC({
                 tags:this.tags,
-                lines:this._lyricPrefixCache.map((line)=>{
+                lines:[...this._lyricPrefixCache.map((line)=>{
                     return {
                         time:line.duration,
                         text:line.text,
                     }
-                }),
+                }),{
+                    time:lastTime.increase(this.lyric[this.lyric.length-1].duration),
+                    text:'',
+                }],
             });
             fs.writeFileSync(savePath,lyricSrc);
         }catch(err){
             printInfo({
                 type:'Fatal',
-                message:e,
+                message:err,
             });
             return;
         }
@@ -232,40 +239,57 @@ class CommandsCollection {
         unsavedWork.hasUnsavedWork = false;
     }
 
+    _watcherOptions = {
+        isBeatTime:false,
+        isAbsoluteTime:false,
+    }
 
+    _writeWatcherFile(){
+        let watchFile = fs.createWriteStream(path.join(configDir,'.watcher'));
+        let t = new Date();
+        printValue(new HMSTime(t.getHours(),t.getMinutes(),t.getSeconds(),t.getMilliseconds(),hmsOption),this.filePath)(undefined,undefined,watchFile)
+        printTable(
+            this._getTable(
+                undefined,
+                undefined,
+                this._watcherOptions.isBeatTime,
+                this._watcherOptions.isAbsoluteTime
+            ),watchFile
+        );
+    }
 
-    commandListLyric(args:ArgumentType[]){
-
-        let lrcRange;
-        let isBeatTime:boolean = false;
-        let isAbsoluteTime:boolean = false;
-        let rangeLeft:number|undefined;
-        let rangeRight:number|undefined;
-        let options:any;
-
-        if(typeof(args[0])=='number'&&typeof(args[1])=='number'){
-            [rangeLeft,rangeRight,options] = args;
-        }else if(typeof(args[0])=='number'&&typeof(args[1])!='number'){
-            [rangeLeft,options] = args;
-        }else if(typeof(args[1])=='number'&&typeof(args[2])=='number'){
-            [options,rangeLeft,rangeRight] = args;
-        }else if(typeof(args[1])=='number'&&typeof(args[0])!='number'){
-            [options,rangeLeft] = args;
-        }
-
+    commandWatcher(args:ArgumentType[]){
+        let options = args[0];
         if(typeof(options)=='string'){
             for(let c of options){
                 switch(c){
                     case 't':
-                        isAbsoluteTime = true;
+                        this._watcherOptions.isAbsoluteTime = true;
                         break;
                     case 'b':
-                        isBeatTime = true;
+                        this._watcherOptions.isBeatTime = true;
                         break;
                 }
             }
+            this._writeWatcherFile();
+        }else{
+            printInfo({
+                type:'Error',
+                message:'Invalid argument.'
+            });
+            return;
         }
+    }
 
+
+
+    _getTable(
+        rangeLeft:number|undefined,
+        rangeRight:number|undefined,
+        isBeatTime:boolean|undefined,
+        isAbsoluteTime:boolean|undefined,
+    ){
+        let lrcRange;
         let lyricList;
         if(isAbsoluteTime){
             this._calculatePrefix();
@@ -280,12 +304,47 @@ class CommandsCollection {
             lrcRange = lyricList;
         }
         
-        printTable([['index',isAbsoluteTime?'timeSpec':'duration','text'],...lrcRange.map((line,index)=>{
+        return([['index',isAbsoluteTime?'timeSpec':'duration','text'],...lrcRange.map((line,index)=>{
             if(isBeatTime){
                 return [index+1,new BeatTime(beatOption,line.duration),line.text];
             }
             return [index+1,line.duration,line.text];
         })]);
+    }
+
+    commandListLyric(args:ArgumentType[]){
+
+        let isBeatTime:boolean = false;
+        let isAbsoluteTime:boolean = false;
+        let rangeLeft:number|undefined;
+        let rangeRight:number|undefined;
+        let options:any;
+
+        if(typeof(args[0])=='number'&&typeof(args[1])=='number'){
+            [rangeLeft,rangeRight,options] = args;
+        }else if(typeof(args[0])=='number'&&typeof(args[1])!='number'){
+            [rangeLeft,options] = args;
+        }else if(typeof(args[1])=='number'&&typeof(args[2])=='number'){
+            [options,rangeLeft,rangeRight] = args;
+        }else if(typeof(args[1])=='number'&&typeof(args[0])!='number'){
+            [options,rangeLeft] = args;
+        }else if(typeof(args[0])!='number'){
+            options = args[0];
+        }
+
+        if(typeof(options)=='string'){
+            for(let c of options){
+                switch(c){
+                    case 't':
+                        isAbsoluteTime = true;
+                        break;
+                    case 'b':
+                        isBeatTime = true;
+                        break;
+                }
+            }
+        }
+        printTable(this._getTable(rangeLeft,rangeRight,isBeatTime,isAbsoluteTime));
     
     }
 
@@ -600,6 +659,11 @@ commandMap.set('close!',{
 commandMap.set('save',{
     exec:scope.commandSaveLyric.bind(scope),
     description:'Save lrc file.',
+});
+
+commandMap.set('watcher',{
+    exec:scope.commandWatcher.bind(scope),
+    description:'Config watcher',
 });
 
 

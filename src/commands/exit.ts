@@ -1,5 +1,7 @@
 import { commandMap } from "../lib/identifier";
 import { printInfo } from "../lib/print";
+import { general } from "../lib/options";
+import { stopProgram } from "../lib/lifecycle";
 
 export let unsavedWork = {
     hasUnsavedWork:false,
@@ -14,7 +16,7 @@ commandMap.set('exit',{
                 message:"The work is unsaved. Please save it before exit or use 'exit!' to force exit.",
             });
         }else{
-            process.exit(0);
+            stopProgram();
         }
     }
 })
@@ -22,7 +24,7 @@ commandMap.set('exit',{
 commandMap.set('exit!',{
     description:'Force exit the program.',
     exec:function(){
-        process.exit(0);
+        stopProgram();
     },
 });
 
@@ -32,19 +34,19 @@ export let sigintCounter = {
 process.on('SIGINT',()=>{
     sigintCounter.count++;
     if(sigintCounter.count==3){
-        process.exit(0);
+        stopProgram();
     }else if(sigintCounter.count==2){
         commandMap.get('exit')!.exec([]);
         printInfo({
             type:'Info',
             message:'Press Control+C again to force exit.',
         });
-        process.stdout.write('> ');
+        process.stdout.write(general.TTYPrompt+' ');
     }else{
         printInfo({
             type:'Info',
             message:'Press Control+C again to exit.',
         });
-        process.stdout.write('> ');
+        process.stdout.write(general.TTYPrompt+' ');
     }
 })
