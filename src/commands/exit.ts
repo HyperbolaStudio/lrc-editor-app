@@ -1,7 +1,8 @@
 import { commandMap } from "../lib/identifier";
-import { printInfo } from "../lib/print";
+import { printInfo, printPrompt } from "../lib/print";
 import { general } from "../lib/options";
 import { stopProgram } from "../lib/lifecycle";
+import chalk = require("chalk");
 
 export let unsavedWork = {
     hasUnsavedWork:false,
@@ -39,14 +40,14 @@ process.on('SIGINT',()=>{
         commandMap.get('exit')!.exec([]);
         printInfo({
             type:'Info',
-            message:'Press Control+C again to force exit.',
+            message:`Press Control+C again to force exit. (All unsaved work will be lost ${chalk.red('FOREVER')})`,
         });
-        process.stdout.write(general.TTYPrompt+' ');
+        printPrompt(general.TTYPrompt);
     }else{
         printInfo({
             type:'Info',
             message:'Press Control+C again to exit.',
         });
-        process.stdout.write(general.TTYPrompt+' ');
+        printPrompt(general.TTYPrompt);
     }
 })

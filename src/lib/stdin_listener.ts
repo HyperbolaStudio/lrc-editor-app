@@ -4,12 +4,10 @@ import { commandMap } from "./identifier";
 import { sigintCounter } from "../commands/exit";
 import chalk = require("chalk");
 import { general } from "./options";
-
-let isStdinTTY = process.stdin.isTTY;
-let isStdoutTTY= process.stdout.isTTY;
+import { printPrompt } from "./print";
 
 export function startListenStdin(){
-    if(isStdinTTY)process.stdout.write(general.TTYPrompt+' ');
+    printPrompt(general.TTYPrompt);
     if(!general.enableTTYColor)chalk.level=0;
     process.stdin.on("data",(data)=>{
         sigintCounter.count = 0;
@@ -22,6 +20,6 @@ export function startListenStdin(){
                 }
             }
         });
-        if(isStdinTTY)process.stdout.write(general.TTYPrompt+' ');
+        printPrompt(general.TTYPrompt);
     });
 }

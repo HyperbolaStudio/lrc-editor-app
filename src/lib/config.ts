@@ -2,10 +2,10 @@ import * as fs from 'fs';
 import * as options from './options';
 import * as os from 'os';
 import * as path from 'path';
-import { configDir } from './lifecycle';
+import { configDir, argsOption } from './lifecycle';
 
 export function createConfigFile(){
-    if(!fs.existsSync(path.join(configDir,'config.json'))){
+    if(argsOption.resetConfig||!fs.existsSync(path.join(configDir,'config.json'))){
         let configObj = {
             numWidth:{
                 ...options.hms.numberWidthOption,

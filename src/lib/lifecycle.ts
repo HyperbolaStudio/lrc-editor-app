@@ -7,18 +7,22 @@ import { general } from './options';
 import { showWelcomeMessage } from './welcome';
 import commander from 'commander';
 import { watcher } from './watcher';
+import { commandMap } from './identifier';
+import { parseCommand } from './parse_command';
+import { isInfo } from '../definition';
+import { printInfo } from './print';
 const {version} = require('../../package.json');
 
 export let configDir = path.join(os.homedir(),'.lrc_edit');
 
 export let argsOption:{
-    doWatcherMode?:boolean;
+    doWatcherMode?:boolean;//
     noWarning?:boolean;
-    execFilePath?:string;
-    loadFilePath?:string;
-    execCommand?:string;
-    configDir?:string;
-    resetConfig?:boolean;
+    execFilePath?:string;//
+    loadFilePath?:string;//
+    execCommand?:string;//
+    configDir?:string;//
+    resetConfig?:boolean;//
 } = {};
 
 export function start(){
@@ -36,6 +40,27 @@ export function start(){
         applyConfigFile();
         if(general.showWelcomeMessage){
             showWelcomeMessage();
+        }
+
+        if(argsOption.loadFilePath){
+            commandMap.get('open')!.exec([argsOption.loadFilePath]);
+        }
+        if(argsOption.execCommand){
+            let res = parseCommand(argsOption.execCommand);
+            if(!isInfo(res)){
+                commandMap.get(res.name)!.exec(res.args);
+            }
+        }
+        if(argsOption.execFilePath){
+            let commands = fs.readFileSync(argsOption.execFilePath).toString().split('\n');
+            for(let cmd of commands){
+                let res = parseCommand(cmd);
+                if(!isInfo(res)){
+                    commandMap.get(res.name)!.exec(res.args);
+                }else{
+                    break;
+                }
+            }
         }
         startListenStdin();
     }
@@ -56,21 +81,23 @@ export function parseArgs(){
     
     commander
         .version(version,'-v, --version','Print lyric editor version.')
-        .option('-i, -interactive','Enter interactive mode (Default in this mode).')
         .option('-l, --load-file <path>','Open a file.')
         .option('-f, --exec-file <path>','Execute commands from a file.')
         .option('-e, -exec <command>','Execute command.')
-        .option('--no-warning','Silence all warnings.')
+        .option('--no-warning','Silence all warning.')
         .option('--config-dir <path>','Specify the config directory.')
         .option('--reset-config','Reset config.')
         .command('watcher','Enter watcher mode.')
             .action(()=>{
                 argsOption.doWatcherMode = true;
             });
-    commander.parse([...process.argv,'-i']);
+    if(process.argv[2]){
+        commander.parse(process.argv);
+    }
     argsOption.execCommand = commander.exec;
     argsOption.execFilePath = commander.execFile;
     argsOption.loadFilePath = commander.loadFile;
-    argsOption.noWarning = commander.noWarning;
+    argsOption.noWarning = !commander.warning;
     argsOption.configDir = commander.configDir;
+    argsOption.resetConfig = commander.resetConfig;
 }

@@ -3,6 +3,8 @@ import { ConsoleInfo } from '../definition';
 import { HMSTime, BeatTime } from '@hypst/time-beat-format';
 import stringWidth from 'string-width';
 import { general } from './options';
+import { argsOption } from './lifecycle';
+import { unsavedWork } from '../commands/exit';
 
 export function printInfo(info:ConsoleInfo,line?:string,path?:string,stream:NodeJS.WritableStream = process.stderr){
     switch(info.type){
@@ -10,6 +12,7 @@ export function printInfo(info:ConsoleInfo,line?:string,path?:string,stream:Node
             stream.write(chalk.white.bgBlue.bold(general.endLine+'(i)Info')+' ');
             break;
         case 'Warning':
+            if(argsOption.noWarning)return info;
             stream.write(chalk.black.bgYellow.bold(general.endLine+'(!)Warning')+' ');
             break;
         case 'Error':
@@ -94,5 +97,15 @@ export function printTable(valueTable:any[][],stream:NodeJS.WritableStream = pro
             }
         }
         stream.write(general.endLine);
+    }
+}
+
+export function printPrompt(prompt:string){
+    if(process.stdout.isTTY && !argsOption.doWatcherMode){
+        if(unsavedWork.hasUnsavedWork){
+            process.stdout.write('*'+prompt+' ')
+        }else{
+            process.stdout.write(prompt+' ');
+        }
     }
 }
