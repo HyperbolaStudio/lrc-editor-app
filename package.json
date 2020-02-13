@@ -6,7 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "package": "pkg ./",
+    "start": "node out/bin/app",
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -24,11 +27,20 @@
   "homepage": "https://github.com/HyperbolaStudio/lrc-editor-app#readme",
   "dependencies": {
     "@hypst/lrc-parser": "^2.0.1",
-    "@hypst/time-beat-format": "0.0.4",
+    "@hypst/time-beat-format": "0.0.5",
     "ansi-escapes": "^4.3.0",
     "chalk": "^3.0.0",
     "commander": "^4.1.1",
     "leven": "^3.1.0",
     "string-width": "^4.2.0"
+  },
+  "bin": {
+    "lrcedit": "out/bin/app.js"
+  },
+  "pkg": {
+    "scripts": [
+      "out/**/*.js",
+      "package.json"
+    ]
   }
 }

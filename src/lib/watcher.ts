@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { printInfo } from './print';
-import { general } from './options';
+import { sigintCounter } from '../commands/exit';
 
 function showWatchFile(path:string){
     process.stdout.write('\u001b[2J');
@@ -22,6 +22,7 @@ export function watcher(path:string){
             if(!fs.existsSync(path)){
                 process.exit(0);
             }
+            sigintCounter.count = 0;
             showWatchFile(path);
         });
     }catch(err){

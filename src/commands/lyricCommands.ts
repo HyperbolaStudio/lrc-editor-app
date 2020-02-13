@@ -1,4 +1,4 @@
-import { LyricTag } from "@hypst/lrc-parser/dist/lib/definition";
+import { LyricTag, LyricLine } from "@hypst/lrc-parser/dist/lib/definition";
 import { LyricStorage, ArgumentType, Step } from "../definition";
 import * as fs from 'fs';
 import {parse as parseLrc,createLRC} from '@hypst/lrc-parser'
@@ -219,13 +219,17 @@ class CommandsCollection {
                 }),{
                     time:lastTime.increase(this.lyric[this.lyric.length-1].duration),
                     text:'',
-                }],
+                }] as unknown as LyricLine[],
             });
             fs.writeFileSync(savePath,lyricSrc);
         }catch(err){
             printInfo({
                 type:'Fatal',
                 message:err,
+            });
+            printInfo({
+                type:'Info',
+                message:`An Node.js error was thrown when saving file. This is probably not a problem with lrcedit.`,
             });
             return;
         }
@@ -436,6 +440,12 @@ class CommandsCollection {
                     args[1] = args[1].toHMSTime();
                 }
                 this._insertAfter(args[0],args[1],args[2]);
+            }else{
+                printInfo({
+                    type:'Error',
+                    message:'Invalid argument.',
+                });
+                return;
             }
         }
         this._saveStep(undo,{

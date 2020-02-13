@@ -72,7 +72,7 @@ export function stopProgram(code?:number){
 }
 
 function preExit(){
-    if(fs.existsSync(path.join(configDir,'.watcher'))){
+    if(!argsOption.doWatcherMode &&fs.existsSync(path.join(configDir,'.watcher'))){
         fs.unlinkSync(path.join(configDir,'.watcher'));
     }
 };
@@ -80,6 +80,7 @@ function preExit(){
 export function parseArgs(){
     
     commander
+        .name('lrcedit')
         .version(version,'-v, --version','Print lyric editor version.')
         .option('-l, --load-file <path>','Open a file.')
         .option('-f, --exec-file <path>','Execute commands from a file.')
@@ -87,13 +88,11 @@ export function parseArgs(){
         .option('--no-warning','Silence all warning.')
         .option('--config-dir <path>','Specify the config directory.')
         .option('--reset-config','Reset config.')
-        .command('watcher','Enter watcher mode.')
-            .action(()=>{
-                argsOption.doWatcherMode = true;
-            });
+        .option('--watcher','Enter watcher mode.')
     if(process.argv[2]){
         commander.parse(process.argv);
     }
+    argsOption.doWatcherMode = commander.watcher;
     argsOption.execCommand = commander.exec;
     argsOption.execFilePath = commander.execFile;
     argsOption.loadFilePath = commander.loadFile;
