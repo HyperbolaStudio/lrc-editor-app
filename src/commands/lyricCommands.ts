@@ -626,16 +626,19 @@ let scope = new CommandsCollection();
 commandMap.set('undo',{
     exec:scope.commandUndo.bind(scope),
     description:'Undo.',
+    overloads:[''],
 });
 
 commandMap.set('redo',{
     exec:scope.commandRedo.bind(scope),
     description:'Redo.',
+    overloads:[''],
 });
 
 commandMap.set('steps',{
     exec:scope.commandSteps.bind(scope),
     description:'List steps.',
+    overloads:[''],
 });
 
 
@@ -644,26 +647,31 @@ commandMap.set('steps',{
 commandMap.set('open',{
     exec:(args)=>{scope.commandOpenLyric.bind(scope)(true,args)},
     description:'Open lrc file.',
+    overloads:['<file_path:string>'],
 });
 
 commandMap.set('close',{
     exec:()=>{scope.commandCloseLyric.bind(scope)(true)},
     description:'Close lrc file.',
+    overloads:[''],
 });
 
 commandMap.set('close!',{
     exec:scope.commandForceCloseLyric.bind(scope),
     description:'Force close lrc file.',
+    overloads:[''],
 });
 
 commandMap.set('save',{
     exec:scope.commandSaveLyric.bind(scope),
     description:'Save lrc file.',
+    overloads:['[file_path:string]'],
 });
 
 commandMap.set('watcher',{
     exec:scope.commandWatcher.bind(scope),
     description:'Config watcher',
+    overloads:['<options:string>'],
 });
 
 
@@ -671,16 +679,24 @@ commandMap.set('watcher',{
 commandMap.set('list',{
     exec:scope.commandListLyric.bind(scope),
     description:'List lyric lines.',
+    overloads:[
+        '',
+        '<range_left:number> [options:string]',
+        '<range_left:number> <range_right:number> [options:string]',
+        '<options:string> <range_left:number> [range_right:number]',
+    ],
 });
 
 commandMap.set('getDurationOf',{
     exec:scope.commandGetDurationOf.bind(scope),
     description:'Get the duration of a lyric line and save it to a variable.',
+    overloads:['<var_name:string> <value:any>'],
 });
 
 commandMap.set('getTextOf',{
     exec:scope.commandGetTextOf.bind(scope),
     description:'Get the text of a lyric and save it to a variable.',
+    overloads:['<var_name:string> <line_index:number>'],
 });
 
 
@@ -688,34 +704,44 @@ commandMap.set('getTextOf',{
 commandMap.set('alter',{
     exec:(args)=>{scope.commandAlter.bind(scope)(true,args)},
     description:'Alter a lyric line.',
+    overloads:[
+        '<line_index:number> <lyric:string> [duration:HMSTime|BeatTime]',
+        '<line_index:number> <duration:HMSTime|BeatTime> [lyric:string]',
+    ],
 });
 
 commandMap.set('insertAfter',{
     exec:(args)=>{scope.commandInsertAfter.bind(scope)(true,args)},
     description:'Insert a new line after.',
+    overloads:['<destination:number> <duration:HMSTime|BeatTime> <lyric:string>'],
 });
 
 commandMap.set('push',{
     exec:scope.commandPush.bind(scope),
-    description:'Append a new line.'
+    description:'Append a new line.',
+    overloads:['<duration:HMSTime|BeatTime> <lyric:string>'],
 });
 
 commandMap.set('pop',{
     exec:scope.commandPop.bind(scope),
-    description:'Remove the last line.'
+    description:'Remove the last line.',
+    overloads:[''],
 });
 
 commandMap.set('remove',{
     exec:(args)=>{scope.commandRemove.bind(scope)(true,args)},
     description:'Remove a line',
+    overloads:['<rangeLeft:number> [rangeRight:number]'],
 });
 
 commandMap.set('clone',{
     exec:(args)=>{scope.commandClone.bind(scope)(true,args)},
     description:'Clone lines to.',
+    overloads:['<rangeLeft:number> <rangeRight:number> <destination:number>'],
 });
 
 commandMap.set('move',{
     exec:(args)=>{scope.commandMove.bind(scope)(true,args)},
     description:'Move lines to.',
+    overloads:['<rangeLeft:number> <rangeRight:number> <destination:number>'],
 });

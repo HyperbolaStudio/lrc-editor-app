@@ -19,7 +19,8 @@ commandMap.set('exit',{
         }else{
             stopProgram();
         }
-    }
+    },
+    overloads:[''],
 })
 
 commandMap.set('exit!',{
@@ -27,6 +28,7 @@ commandMap.set('exit!',{
     exec:function(){
         stopProgram();
     },
+    overloads:[''],
 });
 
 export let sigintCounter = {

@@ -6,4 +6,5 @@ commandMap.set('print',{
         printValue(...args)();
     },
     description:'Display values.',
+    overloads:['<arg:any> ...'],
 });

@@ -35,6 +35,7 @@ export interface LyricStorage{
 export interface CommandStorage{
     exec:(args:ArgumentType[])=>any;
     description:string;
+    overloads:string[];
 }
 
 export interface Step{

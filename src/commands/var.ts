@@ -14,6 +14,7 @@ commandMap.set('set',{
         }
         identifierMap.set(args[0],args[1]);
     },
+    overloads:['<var_name:string> <value:any>'],
 });
 
 commandMap.set('variables',{
@@ -21,6 +22,7 @@ commandMap.set('variables',{
     exec:function(){
         printTable([...identifierMap]);
     },
+    overloads:[''],
 });
 
 commandMap.set('delete',{
@@ -40,7 +42,8 @@ commandMap.set('delete',{
             });
         }
         identifierMap.delete(args[0]);
-    }
+    },
+    overloads:['<var_name:string>'],
 });
 
 commandMap.set('commands',{
@@ -58,4 +61,5 @@ commandMap.set('commands',{
             return [tr[0],tr[1].description];
         }));
     },
+    overloads:[''],
 });

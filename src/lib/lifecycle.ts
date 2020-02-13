@@ -83,7 +83,7 @@ export function parseArgs(){
         .version(version,'-v, --version','Print lyric editor version.')
         .option('-l, --load-file <path>','Open a file.')
         .option('-f, --exec-file <path>','Execute commands from a file.')
-        .option('-e, -exec <command>','Execute command.')
+        .option('-e, --exec <command>','Execute command.')
         .option('--no-warning','Silence all warning.')
         .option('--config-dir <path>','Specify the config directory.')
         .option('--reset-config','Reset config.')

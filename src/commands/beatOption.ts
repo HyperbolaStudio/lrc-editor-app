@@ -32,4 +32,5 @@ function commandBeatOption(args:ArgumentType[]){
 commandMap.set('beatOption',{
     exec:commandBeatOption,
     description:'Set beat options.',
+    overloads:['<flag:string> <value:number>'],
 });
