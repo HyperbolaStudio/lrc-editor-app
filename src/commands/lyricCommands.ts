@@ -9,8 +9,31 @@ import { unsavedWork } from "./exit";
 import { commandMap } from "../lib/identifier";
 import { configDir } from "../lib/lifecycle";
 import * as path from 'path';
+import {EventEmitter} from 'events';
 
-class CommandsCollection {
+export class CommandsCollection extends EventEmitter{
+
+    constructor(){
+        super();
+        this.on('changed',()=>{
+            unsavedWork.hasUnsavedWork = true;
+            this._clearPrefixCache();
+            this._calculatePrefix();
+            this._writeWatcherFile();
+        });
+        this.on('closed',()=>{
+            this.tags = [];
+            this.lyric = [];
+            this._lyricPrefixCache = [];
+            this.filePath = '';
+            this._prefixCached = false;
+            unsavedWork.hasUnsavedWork = false;
+        });
+        this.on('saved',()=>{
+            unsavedWork.hasUnsavedWork = false;
+            this._writeWatcherFile();
+        });
+    }
 
 
 
@@ -54,13 +77,6 @@ class CommandsCollection {
         else tStack = this.redoStack;
         tStack.push(step);
 
-    }
-
-    private _lyricChanged(){
-        unsavedWork.hasUnsavedWork = true;
-        this._clearPrefixCache();
-        this._calculatePrefix();
-        this._writeWatcherFile();
     }
 
 
@@ -150,7 +166,7 @@ class CommandsCollection {
                     }
                     this.tags = [...lyricObj.lyric.tags];
                     
-                    this._lyricChanged();
+                    this.emit('changed');
                     this._saveStep(undo,{
                         name:'Load File',
                         undo:{
@@ -188,23 +204,32 @@ class CommandsCollection {
                     args:[this.filePath],
                 },
             });
-            this.tags = [];
-            this.lyric = [];
-            this.filePath = '';
+            this.emit('closed');
         }
     }
 
     commandForceCloseLyric(){
-            this.tags = [];
-            this.lyric = [];
             this.undoStack = [];
             this.redoStack = [];
-            this.filePath = '';
-            unsavedWork.hasUnsavedWork = false;
+            this.emit('closed');
     }
 
     commandSaveLyric(args:ArgumentType[]){
         let savePath = this.filePath;
+        if(!savePath && !args[0]){
+            printInfo({
+                type:'Error',
+                message:'Please specify file path.'
+            });
+            return;
+        }
+        if(!this.lyric.length){
+            printInfo({
+                type:'Warning',
+                message:'Lyric is empty. Nothing will be save.'
+            });
+            return;
+        }
         try{
             if(typeof(args[0])=='string')savePath = args[0];
             this._calculatePrefix();
@@ -241,6 +266,7 @@ class CommandsCollection {
             this.filePath = savePath;
         }
         unsavedWork.hasUnsavedWork = false;
+        this.emit('saved');
     }
 
     _watcherOptions = {
@@ -415,8 +441,7 @@ class CommandsCollection {
             }
         });
 
-        this._lyricChanged();
-
+        this.emit('changed');
     }
 
     _insertAfter(index:number,duration:HMSTime,text:string){
@@ -455,7 +480,7 @@ class CommandsCollection {
                 args:[args[0]+1],
             }
         })
-        this._lyricChanged();
+        this.emit('changed');
     }
 
     commandRemove(undo:boolean,args:ArgumentType[]){
@@ -492,7 +517,7 @@ class CommandsCollection {
                             args,
                         }
                     });
-                    this._lyricChanged();
+                    this.emit('changed');
                 }).bind(this),
                 args:stepArgs,
             }
@@ -501,7 +526,7 @@ class CommandsCollection {
             ...this.lyric.slice(0,args[0]-1),
             ...this.lyric.slice(args[1]),
         ];
-        this._lyricChanged();
+        this.emit('changed');
     }
 
     commandPush(args:ArgumentType[]){
@@ -554,7 +579,7 @@ class CommandsCollection {
                 args:[destination+1,destination+right-left+1],
             }
         });
-        this._lyricChanged();
+        this.emit('changed');
     }
 
     commandMove(undo:boolean,args:ArgumentType[]){
@@ -623,13 +648,13 @@ class CommandsCollection {
                 args:[endDestination+1,endDestination+right-left+1,newDestination],
             }
         });
-        this._lyricChanged();
+        this.emit('changed');
     }
 
 }
 
 
-let scope = new CommandsCollection();
+export let scope = new CommandsCollection();
 
 
 

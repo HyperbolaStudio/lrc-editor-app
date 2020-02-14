@@ -38,5 +38,6 @@ export function applyConfigFile(){
             (options.general as any)[key] = newOptions.general[key];
         }
     }
+    return newOptions;
 }
 

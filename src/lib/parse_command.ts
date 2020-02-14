@@ -57,7 +57,7 @@ export function parseCommand(str:string):Command|ConsoleInfo{
                 }else if(beatTimeRegExp.test(buf)){
                     command.args.push(new BeatTime(beatOption,buf.slice(1,buf.length-1)));
                 }else if(identifierMap.has(buf)){
-                    command.args.push({identifier:buf});
+                    command.args.push(identifierMap.get(buf)!);
                 }else if(!isNaN(Number(buf))){
                     command.args.push(Number(buf));
                 }else{

@@ -1,0 +1,18 @@
+process.send!({
+    flag:'setCommand',
+    content:{
+        name:'aaa',
+        description:'AAA',
+        overloads:[''],
+    }
+});
+process.on('message',(msg)=>{
+    if(msg.flag=='commandExecuted'){
+        process.send!({
+            flag:'printValue',
+            content:{
+                values:msg.content,
+            }
+        });
+    }
+});

@@ -25,6 +25,8 @@ export let argsOption:{
     resetConfig?:boolean;//
 } = {};
 
+export let config:any;
+
 export function start(){
     parseArgs();
     if(argsOption.configDir){
@@ -37,7 +39,7 @@ export function start(){
             fs.mkdirSync(configDir);
         }
         createConfigFile();
-        applyConfigFile();
+        config = applyConfigFile();
         if(general.showWelcomeMessage){
             showWelcomeMessage();
         }
