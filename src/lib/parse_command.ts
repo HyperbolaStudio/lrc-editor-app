@@ -55,7 +55,10 @@ export function parseCommand(str:string):Command|ConsoleInfo{
                 }else if(hmsTimeRegExp.test(buf)){
                     command.args.push(new HMSTime(buf.slice(1,buf.length-1),hmsOption));
                 }else if(beatTimeRegExp.test(buf)){
-                    command.args.push(new BeatTime(beatOption,buf.slice(1,buf.length-1)));
+                    command.args.push(new BeatTime({
+                        ...beatOption,
+                        isRelativeTime:!commandMap.get(command.name)!.isAbsoluteTime,
+                    },buf.slice(1,buf.length-1)));
                 }else if(identifierMap.has(buf)){
                     command.args.push(identifierMap.get(buf)!);
                 }else if(!isNaN(Number(buf))){

@@ -3,6 +3,7 @@ import * as options from './options';
 import * as os from 'os';
 import * as path from 'path';
 import { configDir, argsOption } from './lifecycle';
+import { addPlugin } from './plugin/plugin';
 
 export function createConfigFile(){
     if(argsOption.resetConfig||!fs.existsSync(path.join(configDir,'config.json'))){
@@ -36,6 +37,11 @@ export function applyConfigFile(){
     if(newOptions.general){
         for(let key in newOptions.general){
             (options.general as any)[key] = newOptions.general[key];
+        }
+    }
+    if(newOptions.plugins){
+        for(let plugin of newOptions.plugins){
+            addPlugin(plugin);
         }
     }
     return newOptions;

@@ -2,6 +2,9 @@ import { ArgumentType } from "../definition";
 import { printInfo } from "../lib/print";
 import { beat } from "../lib/options";
 import { commandMap } from "../lib/identifier";
+import {EventEmitter} from 'events';
+
+export let beatOptionChangedEvent = new class extends EventEmitter{};
 
 function commandBeatOption(args:ArgumentType[]){
     if(typeof(args[0])!='string'||typeof(args[1])!='number'){
@@ -26,7 +29,9 @@ function commandBeatOption(args:ArgumentType[]){
                 type:'Warning',
                 message:'Unrecognized option.',
             });
+            return;
     }
+    beatOptionChangedEvent.emit('beatOptionChanged');
 }
 
 commandMap.set('beatOption',{

@@ -38,6 +38,7 @@ export interface CommandStorage{
     exec:(args:ArgumentType[])=>any;
     description:string;
     overloads:string[];
+    isAbsoluteTime?:boolean;
 }
 
 export interface Step{
@@ -68,7 +69,7 @@ export type TimeWrapper = {
 export type IPCArgumentType = number|string|boolean|TimeWrapper;
 
 export function isTimeWrapper(val:IPCArgumentType):val is TimeWrapper{
-    return typeof(val)=='object';
+    return typeof(val)=='object' && val.type != undefined;
 }
 
 export function wrap(val:HMSTime):TimeWrapper&{type:'HMSTime'};
@@ -106,72 +107,125 @@ export function deWrap(val:IPCArgumentType):ArgumentType{
     }
 }
 
-export interface LRCServerEvents{
+export interface PluginEvents{
+    [event:string]:{
+        request:any;
+        response:any;
+    }
+}
+
+export type Handler<Events extends PluginEvents,K extends keyof Events> = (request:Events[K]['request'])=>(Events[K]['response'] | Promise<Events[K]['response']>);
+
+export interface LRCServerEvents extends PluginEvents{
+
 
     printInfo:{
-        info:ConsoleInfo;
-        line?:string;
-        path?:string;
+        request:{
+            info:ConsoleInfo;
+            line?:string;
+            path?:string;
+        }
+        response:void;
     }
 
-    printTable:IPCArgumentType[][];
+    printTable:{
+        request:IPCArgumentType[][];
+        response:void;
+    }
 
     printValue:{
-        values:IPCArgumentType[];
-        sep?:string;
-        end?:string;
+        request:{
+            values:IPCArgumentType[];
+            sep?:string;
+            end?:string;
+        }
+        response:void;
     }
 
     exec:{
-        name:string;
-        args:IPCArgumentType[];
+        request:{
+            name:string;
+            args:IPCArgumentType[];
+        }
+        response:void;
     }
 
     setCommand:{
-        name:string;
-        description:string;
-        overloads:string[];
+        request:{
+            name:string;
+            description:string;
+            overloads:string[];
+            isAbsoluteTime?:boolean;
+            pauseStdin?:boolean;
+        }
+        response:void;
     }
 
-    registerLyricChange:string;
+    resumeStdin:{
+        request:void;
+        response:void;
+    }
+    
 
-    getConfig:void;
+    registerLyricChange:{
+        request:string;
+        response:void;
+    }
 
-    getConfigDir:void;
+    getConfig:{
+        request:void;
+        response:any;
+    }
 
-    getWorkUnsaved:void;
+    getConfigDir:{
+        request:void;
+        response:string;
+    }
+    getWorkUnsaved:{
+        request:void;
+        response:boolean;
+    }
 
 
 }
 
-export interface LRCClientEvents{
+export interface LRCClientEvents extends PluginEvents{
     beatOptionChanged:{
-        bpm:number,
-        beat:number,
-        subdiv:number,
-    }
-    watcherOptionChanged:{
-        isAbsoluteTine:boolean,
-        isBeatTime:boolean,
+        request:{
+            bpm:number,
+            beat:number,
+            subdiv:number,
+        };
+        response:void;
     }
     lyricChanged:{
-        event:string;
-        scope:{
-            lyric:{
-                duration:TimeWrapper;
-                text:string;
-            }[];
-            absoluteTimeLyric:{
-                duration:TimeWrapper;
-                text:string;
-            }[];
-    
-            filePath:string;
-        }
+        request:{
+            event:string;
+            scope:{
+                lyric:{
+                    duration:TimeWrapper;
+                    text:string;
+                }[];
+                absoluteTimeLyric:{
+                    duration:TimeWrapper;
+                    text:string;
+                }[];
+        
+                filePath:string;
+                watcherOptions:{
+                    isBeatTime:boolean;
+                    isAbsoluteTime:boolean;
+                }
+            }
+        };
+        response:void;
     }
 
     commandExecuted:{
-        name:string;
-        args:IPCArgumentType[];
+        request:{
+            name:string;
+            args:IPCArgumentType[];
+        };
+        response:void;
     }
 }

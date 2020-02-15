@@ -9,17 +9,18 @@ import { printPrompt } from "./print";
 export function startListenStdin(){
     printPrompt(general.TTYPrompt);
     if(!general.enableTTYColor)chalk.level=0;
-    process.stdin.on("data",(data)=>{
+    process.stdin.on("data",async (data)=>{
         sigintCounter.count = 0;
-        data.toString().split('\n').forEach((command)=>{
+        let commands = data.toString().split('\n');
+        for(let command of commands){
             command = command.trimRight();
             if(command!=''){
                 let res = parseCommand(command.trimRight());
                 if(!isInfo(res)){
-                    commandMap.get(res.name)!.exec(res.args);
+                    await commandMap.get(res.name)!.exec(res.args);
                 }
             }
-        });
+        };
         printPrompt(general.TTYPrompt);
     });
 }

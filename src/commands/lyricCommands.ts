@@ -309,6 +309,7 @@ export class CommandsCollection extends EventEmitter{
             });
             return;
         }
+        this.emit('watcherOptionChanged');
     }
 
 
@@ -336,7 +337,7 @@ export class CommandsCollection extends EventEmitter{
         
         return([['index',isAbsoluteTime?'timeSpec':'duration','text'],...lrcRange.map((line,index)=>{
             if(isBeatTime){
-                return [index+1,new BeatTime(beatOption,line.duration),line.text];
+                return [index+1,new BeatTime({...beatOption,isRelativeTime:!isAbsoluteTime},line.duration),line.text];
             }
             return [index+1,line.duration,line.text];
         })]);
