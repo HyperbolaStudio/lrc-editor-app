@@ -5,8 +5,7 @@ import { printInfo, printValue, printTable } from "../print";
 import { commandMap } from "../identifier";
 import { HMSTime, BeatTime } from "@hypst/time-beat-format";
 import { beat, hms } from "../options";
-import { config, configDir } from "../lifecycle";
-import { unsavedWork } from "../../commands/exit";
+import { config, configDir, unsavedWork } from "../lifecycle";
 import { scope, CommandsCollection } from '../../commands/lyricCommands';
 import { beatOptionChangedEvent } from '../../commands/beatOption';
 

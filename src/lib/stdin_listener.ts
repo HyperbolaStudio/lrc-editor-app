@@ -1,10 +1,10 @@
 import { parseCommand } from "./parse_command";
 import { isInfo } from "../definition";
 import { commandMap } from "./identifier";
-import { sigintCounter } from "../commands/exit";
 import chalk = require("chalk");
 import { general } from "./options";
 import { printPrompt } from "./print";
+import { sigintCounter } from "./lifecycle";
 
 export function startListenStdin(){
     printPrompt(general.TTYPrompt);

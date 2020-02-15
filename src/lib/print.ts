@@ -3,8 +3,7 @@ import { ConsoleInfo } from '../definition';
 import { HMSTime, BeatTime } from '@hypst/time-beat-format';
 import stringWidth from 'string-width';
 import { general } from './options';
-import { argsOption } from './lifecycle';
-import { unsavedWork } from '../commands/exit';
+import { argsOption, unsavedWork } from './lifecycle';
 
 export function printInfo(info:ConsoleInfo,line?:string,path?:string,stream:NodeJS.WritableStream = process.stderr){
     switch(info.type){

@@ -4,6 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { configDir, argsOption } from './lifecycle';
 import { addPlugin } from './plugin/plugin';
+import { printInfo } from './print';
 
 export function createConfigFile(){
     if(argsOption.resetConfig||!fs.existsSync(path.join(configDir,'config.json'))){
@@ -21,29 +22,40 @@ export function createConfigFile(){
 }
 
 export function applyConfigFile(){
-    let newOptions = JSON.parse(fs.readFileSync(path.join(os.homedir(),'.lrc_edit','config.json')).toString());
-    if(newOptions.numWidth){
-        for(let key in options.hms.numberWidthOption){
-            if(typeof(newOptions.numWidth[key])=='number'){
-                options.hms.numberWidthOption[key] = newOptions.numWidth[key];
+    try{
+        let newOptions = JSON.parse(fs.readFileSync(path.join(os.homedir(),'.lrc_edit','config.json')).toString());
+        if(newOptions.numWidth){
+            for(let key in options.hms.numberWidthOption){
+                if(typeof(newOptions.numWidth[key])=='number'){
+                    options.hms.numberWidthOption[key] = newOptions.numWidth[key];
+                }
+            }
+            for(let key in options.beat.numberWidthOption){
+                if(typeof(newOptions.numWidth[key])=='number'){
+                    options.beat.numberWidthOption[key] = newOptions.numWidth[key];
+                }
             }
         }
-        for(let key in options.beat.numberWidthOption){
-            if(typeof(newOptions.numWidth[key])=='number'){
-                options.beat.numberWidthOption[key] = newOptions.numWidth[key];
+        if(newOptions.general){
+            for(let key in newOptions.general){
+                (options.general as any)[key] = newOptions.general[key];
             }
         }
-    }
-    if(newOptions.general){
-        for(let key in newOptions.general){
-            (options.general as any)[key] = newOptions.general[key];
+        if(newOptions.plugins){
+            for(let plugin of newOptions.plugins){
+                addPlugin(plugin);
+            }
         }
+        return newOptions;
+    }catch(err){
+        printInfo({
+            type:'Error',
+            message:`Failed to parse 'config.json'. Using default config.`
+        });
+        printInfo({
+            type:'Info',
+            message:`Use '--reset-config' option to reset 'config.json'.`,
+        });
     }
-    if(newOptions.plugins){
-        for(let plugin of newOptions.plugins){
-            addPlugin(plugin);
-        }
-    }
-    return newOptions;
 }
 

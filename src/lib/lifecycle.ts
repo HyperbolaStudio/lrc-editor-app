@@ -10,8 +10,17 @@ import { watcher } from './watcher';
 import { commandMap } from './identifier';
 import { parseCommand } from './parse_command';
 import { isInfo } from '../definition';
-import { printInfo } from './print';
+import { printInfo, printPrompt } from './print';
+import chalk from 'chalk';
 const {version} = require('../../package.json');
+
+export let sigintCounter = {
+    count:0,
+};
+
+export let unsavedWork = {
+    hasUnsavedWork:false,
+}
 
 export let configDir = path.join(os.homedir(),'.lrc_edit');
 
@@ -102,3 +111,22 @@ export function parseArgs(){
     argsOption.configDir = commander.configDir;
     argsOption.resetConfig = commander.resetConfig;
 }
+process.on('SIGINT',()=>{
+    sigintCounter.count++;
+    if(sigintCounter.count==3){
+        stopProgram();
+    }else if(sigintCounter.count==2){
+        commandMap.get('exit')!.exec([]);
+        printInfo({
+            type:'Info',
+            message:`Press Control+C again to force exit. (All unsaved work will be lost ${chalk.red('FOREVER')})`,
+        });
+        printPrompt(general.TTYPrompt);
+    }else{
+        printInfo({
+            type:'Info',
+            message:'Press Control+C again to exit.',
+        });
+        printPrompt(general.TTYPrompt);
+    }
+})
