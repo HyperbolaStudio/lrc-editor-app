@@ -1,4 +1,5 @@
 import { LRCEditPlugin } from "./lrcedit_plugin";
+import { printInfo } from "../print";
 
 export let pluginMap = new Map<number,{path:string,plugin:LRCEditPlugin}>();
 

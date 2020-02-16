@@ -1,7 +1,4 @@
-import {HMSTime,BeatTime} from '@hypst/time-beat-format';
-import {LyricTag} from '@hypst/lrc-parser/dist/lib/definition';
-import { AbstractPlugin } from './lib/plugin/abstract_plugin';
-import { hms, beat } from './lib/options';
+import {HMSTime,BeatTime, BeatTimeNumberWidthOption, HMSTimeNumberWidthOption} from '@hypst/time-beat-format';
 
 export interface IdentifierArg{
     identifier: string
@@ -62,8 +59,17 @@ export interface IPCResponse{
 }
 
 export type TimeWrapper = {
-    type:'HMSTime'|'BeatTime';
+    type:'HMSTime';
     time:number;
+    numWidth?:HMSTimeNumberWidthOption;
+}|{
+    type:'BeatTime';
+    time:number;
+    bpm:number;
+    beat:number;
+    subdiv:number;
+    numWidth?:BeatTimeNumberWidthOption;
+    isRelativeTime:boolean;
 }
 
 export type IPCArgumentType = number|string|boolean|TimeWrapper;
@@ -81,11 +87,21 @@ export function wrap(val:ArgumentType):IPCArgumentType{
         return {
             type:'HMSTime',
             time:val.toMillisecond(),
+            numWidth:{
+                ...(val as any)._option.numberWidthOption
+            }
         }
     }else if(val instanceof BeatTime){
         return {
             type:'BeatTime',
             time:val.toHMSTime().toMillisecond(),
+            bpm:(val as any)._option.bpm,
+            beat:(val as any)._option.beatsPerNote,
+            subdiv:(val as any)._option.divisionsPerBeat,
+            numWidth:{
+                ...(val as any)._option.numberWidthOption
+            },
+            isRelativeTime:(val as any)._option.isRelativeTime,
         }
     }else{
         return val;
@@ -98,9 +114,15 @@ export function deWrap(val:IPCArgumentType):ArgumentType;
 export function deWrap(val:IPCArgumentType):ArgumentType{
     if(isTimeWrapper(val)){
         if(val.type=='HMSTime'){
-            return new HMSTime(val.time,hms);
+            return new HMSTime(val.time,{numberWidthOption:val.numWidth});
         }else{
-            return new BeatTime(beat,new HMSTime(val.time,hms));
+            return new BeatTime({
+                bpm:val.bpm,
+                beatsPerNote:val.beat,
+                divisionsPerBeat:val.subdiv,
+                numberWidthOption:val.numWidth,
+                isRelativeTime:val.isRelativeTime,
+            },new HMSTime(val.time));
         }
     }else{
         return val;

@@ -3,7 +3,6 @@ import { AbstractPlugin } from "./abstract_plugin";
 import { LRCServerEvents, deWrap, LRCClientEvents, wrap, IPCArgumentType, ArgumentType } from "../../definition";
 import { printInfo, printValue, printTable } from "../print";
 import { commandMap } from "../identifier";
-import { HMSTime, BeatTime } from "@hypst/time-beat-format";
 import { beat, hms } from "../options";
 import { config, configDir, unsavedWork } from "../lifecycle";
 import { scope, CommandsCollection } from '../../commands/lyricCommands';
@@ -41,6 +40,7 @@ export class LRCEditPlugin extends AbstractPlugin<LRCServerEvents,LRCClientEvent
             pluginMap.delete(this.proc.pid);
             this._finalize();
         });
+        beatOptionChangedEvent.emit('beatOptionChanged');
     }
     _commands:string[] = [];
     _lyricChangeListeners:[string,()=>void][] = [];

@@ -27,7 +27,7 @@
   "homepage": "https://github.com/HyperbolaStudio/lrc-editor-app#readme",
   "dependencies": {
     "@hypst/lrc-parser": "^2.0.1",
-    "@hypst/time-beat-format": "0.0.5",
+    "@hypst/time-beat-format": "0.0.6",
     "ansi-escapes": "^4.3.0",
     "chalk": "^3.0.0",
     "commander": "^4.1.1",

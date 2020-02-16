@@ -7,6 +7,13 @@ import { addPlugin, removePlugin, pluginMap } from "../lib/plugin/plugin";
 
 commandMap.set('plugin',{
     exec:(args)=>{
+        if(!args[0]){
+            printInfo({
+                type:'Error',
+                message:'Invalid argument.',
+            });
+            return;
+        }
         for(let x of args){
             if(typeof(x)!='string'){
                 printInfo({
