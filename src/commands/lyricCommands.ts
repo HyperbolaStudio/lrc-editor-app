@@ -5,9 +5,8 @@ import {parse as parseLrc,createLRC} from '@hypst/lrc-parser'
 import { printInfo, printTable, printValue } from "../lib/print";
 import { HMSTime, BeatTime } from "@hypst/time-beat-format";
 import { hms as hmsOption, beat as beatOption } from "../lib/options";
-import { unsavedWork } from "./exit";
 import { commandMap } from "../lib/identifier";
-import { configDir } from "../lib/lifecycle";
+import { configDir, unsavedWork } from "../lib/lifecycle";
 import * as path from 'path';
 import {EventEmitter} from 'events';
 
@@ -246,7 +245,7 @@ export class CommandsCollection extends EventEmitter{
                     text:'',
                 }] as unknown as LyricLine[],
             });
-            fs.writeFileSync(savePath,lyricSrc);
+            fs.writeFileSync(savePath,lyricSrc.trim());
         }catch(err){
             printInfo({
                 type:'Fatal',

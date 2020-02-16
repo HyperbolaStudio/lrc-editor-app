@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { printInfo } from './print';
-import { sigintCounter } from '../commands/exit';
+import { sigintCounter } from './lifecycle';
 
 function showWatchFile(path:string){
     process.stdout.write('\u001b[2J');

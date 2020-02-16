@@ -8,6 +8,7 @@ import { beat, hms } from "../options";
 import { config, configDir, unsavedWork } from "../lifecycle";
 import { scope, CommandsCollection } from '../../commands/lyricCommands';
 import { beatOptionChangedEvent } from '../../commands/beatOption';
+import { pluginMap } from './plugin';
 
 export function convertIPCScope(scope:CommandsCollection):LRCClientEvents['lyricChanged']['request']['scope']{
     return {
@@ -36,6 +37,10 @@ export class LRCEditPlugin extends AbstractPlugin<LRCServerEvents,LRCClientEvent
             stdio:stdio as any,
         }));
         this._registerEvents();
+        this.proc.once('disconnect',()=>{
+            pluginMap.delete(this.proc.pid);
+            this._finalize();
+        });
     }
     _commands:string[] = [];
     _lyricChangeListeners:[string,()=>void][] = [];
