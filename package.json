@@ -1,12 +1,12 @@
 {
   "name": "@hypst/lrcedit",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Lyric editor app",
   "main": "out/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc -p",
-    "watch": "tsc -w",
+    "build": "tsc -p ./",
+    "watch": "tsc -w ./",
     "package": "pkg ./",
     "start": "node out/bin/app",
     "prepublishOnly": "npm run build"
