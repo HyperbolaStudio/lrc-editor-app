@@ -1,6 +1,6 @@
 {
-  "name": "lrc-editor-app",
-  "version": "1.0.0",
+  "name": "@hypst/lrcedit",
+  "version": "0.0.1",
   "description": "Lyric editor app",
   "main": "out/index.js",
   "scripts": {

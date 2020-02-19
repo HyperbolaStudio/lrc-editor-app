@@ -1,16 +1,45 @@
 # LYRIC-EDITOR-APP
 
-Lyric editing, using cli.
+Lyric editing, using cli. 使用CLI进行lrc歌词文件的编辑
 
-(TODO: 🚧 Document in English is under constructing.)
+(Note: 🚧 Docs in English is under editing.)
 
-（注意：这一文档正在编辑中，内容可能不完整）
+## 开始
 
-（注意：程序仍处在开发状态）
+从npm安装：
+
+```
+npm install @hypst/lrcedit
+```
+
+或者从发布的版本中获取适用于Linux，MacOS和Windows的二进制可执行文件。
+
+## 使用
+
+```
+(i)Info Lyric Editor - v0.0.1
+
+
+(i)Info For more information, visit <https://github.com/HyperbolaStudio/lrc-editor-app#readme>.
+
+> push [8] ''
+*> push [4] '姜懿真你物理多少分'
+*> push [4] '我的物理成绩八十六分'
+*> list
+index   duration        text
+1       [00:08.000]
+2       [00:04.000]     姜懿真你物理多少分
+3       [00:04.000]     我的物理成绩八十六分
+*> save '姜懿真你物理多少分.lrc'
+
+(i)Info File path changed, open file 姜懿真你物理多少分.lrc.
+
+> exit
+```
 
 ## 命令
 
-命令系统是LYRIC-EDITOR-APP的核心，通过命令，用户可以让程序完成一项操作。
+命令系统是LRCEDIT的核心，通过命令，用户可以让程序完成一项操作。
 
 ### 命令调用格式
 
@@ -195,6 +224,31 @@ move <rangeLeft:number> <rangeRight:number> <destination:number>
 ```
 open <文件名：字符串>
 ```
+
+#### `plugin`
+
+载入插件。
+
+```
+plugin <插件路径：字符串>
+```
+
+载入插件后，插件会作为lrcedit的一个子进程运行。
+
+#### `pluglist`
+
+列出当前正在运行的所有插件。
+
+没有参数。
+
+#### `plugout`
+
+移除插件。
+
+```
+plugout <pid：数值>
+```
+
 #### `pop`
 
 删除最后一句歌词。
